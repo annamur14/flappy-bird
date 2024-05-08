@@ -1,4 +1,4 @@
-/*● Anna Murray / amx0178
+/*● Anna Murray / 
 
 ● Flappy Bird - navigate your bird to avoid hitting the pipes!
 ● Advanced Features: gravity, screen scrolling, sound
