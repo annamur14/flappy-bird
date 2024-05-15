@@ -32,91 +32,66 @@
 .EQU BOTTOMY, 18
 
 // ComputeDigit(k(r0)): computes digit needed for DrawNum
-// quot: r4
-// rem: r5
-// dividend (k): r0 -> r6
-// divisor: r7
-// quot*10: r8
 ComputeDigit:
 	push {r4, r5, r6, r8, lr}
 	
-	// initializing registers
 	mov r4, #0
 	mov r6, r0
-	mov r5, r0 // rem = dividend
-	// unconditional branch to if -> check if rem < divisor
+	mov r5, r0 
 	b IsRemLDivisor
 	
-	// loop body
 	Body:
-		sub r5, r5, #10 // rem = rem - divisor 
-		add r4, r4, #1 // quot++
+		sub r5, r5, #10 
+		add r4, r4, #1 
 		
-	// check if rem >= divisor, branch to body if yes, done if no
 	IsRemLDivisor:
 		cmp r5, #10 
 		bge Body
 		
-		// quot*10
-		lsl r8, r4, #3 // quot*8
-		add r8, r8, r4 // +quot
-		add r8, r8, r4 // +quot
+		lsl r8, r4, #3 
+		add r8, r8, r4 
+		add r8, r8, r4 
 		
-		// get remainder
-		sub r5, r6, r8 // rem = dividend-(quot*10)
+		sub r5, r6, r8 
 		
-		// push digits to stack after getting remainder, pop them in DrawNum loop
-		
-		// move remainder into r0 and return
 		mov r0, r5
 		
 	pop {r4, r5, r6, r8, pc}
 	
 // DrawNum: DrawNum(x(r0), y(r1), n(r2)) - Draws an integer (decimal/base 10) value (n – signed int) at
 // screen column x, row y. The integer value should be preceded by a “-” if the value is
-// negative and nothing if it is zero/positive. Do not display any leading zeros. As above,
+// negative and nothing if it is zero/positive. Do not display any leading zeros. 
 // text should be clipped around screen edges
 DrawNum:
 	push {r4, r5, r6, r7, r8, r9, r10, r11, lr}
-	// initialize registers
 	mov r6, r0 // x (r0)
 	mov r7, r1 // y (r1)
 	mov r8, r2 // n(r2)
-	mov r11, #0 // initialize loop counter for push&pop
+	mov r11, #0 
 	
-	// check if n(r2)=0, if yes: write "0" and done
 	cmp r2, #0
 	bne NotZero
 	add r2, r2, #48
 	bl DrawChar
 	b DrawNumDone
 	NotZero:
-	// loop 1 (push) body
 	PushLoop: 
 	
-		mov r0, r8 // prepare for ComputeDigit call -> put n(r8) in r0
-		// push numbers onto stack after division
+		mov r0, r8 
 		
-		// divide
-		bl ComputeDigit // remainder in r0
-		// check if r0 == 0, if yes were out of digits -> skip to poploop 
+		bl ComputeDigit 
 		cmp r0, #0
 		beq PopLoop
-		// if no, theres a real digit in r0, need to push
 		push {r0}
-		add r11, r11, #1 // incrememnt loop counter -> # of digits we need from stack
+		add r11, r11, #1 
 		
-		// move divdend into r9
 		mov r9, r8
-		// clear r8
 		mov r8, #0
-		// unconditional branch to if -> check if dividend < divisor (10)
 		b IsRemLDivisor2
 
-		// dividing loop body
 		DivideBody:
-			sub r9, r9, #10 // rem = rem - divisor 
-			add r8, r8, #1 // quot++
+			sub r9, r9, #10 
+			add r8, r8, #1 
 
 		IsRemLDivisor2:
 			cmp r9, #10 
@@ -128,15 +103,12 @@ DrawNum:
 		MainLoop:
 		pop {r0}
 		mov r10, r0
-		mov r2, r0 // move r0 to r2 -> prepare to call DrawChar
-		// move x and y into r0 r1
-		mov r0, r6 // get correct x
-		mov r1, r7 // get correct y
-		add r2, r2, #48 // get ascii value of r2 digit
-		bl DrawChar // print digit
-		// increment x
+		mov r2, r0 
+		mov r0, r6 
+		mov r1, r7
+		add r2, r2, #48 
+		bl DrawChar 
 		add r6, r6, #1
-		// decrement loop counter
 		sub r11, r11, #1
 		IsR10GT9:
 			cmp r11, #0
