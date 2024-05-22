@@ -117,70 +117,54 @@ DrawNum:
 	pop {r4, r5, r6, r7, r8, r9, r10, r11, pc}
 
 // DrawChar(x[r0], y[r1], c[r2]): draws a given character on the screen at the given coords
-// strb(store) ascii value(hex) at computed address 
-	// left shift y 7, add x, add base address
 .align 2
 DrawChar:
-	// save lr
 	push {r4, r5, r6, r7, lr}
 	mov r6, #0
 	mov r5, #0
-	// load charbuffer address
 	ldr r4, =TEXT_BUFFER
-	// if x > 79, skip writing char section
 	cmp r0, #79
 	bgt Done
-	// compute address
-	lsl r7, r1, #7 // shfit y left 7
-	add r6, r7, r0 // add y and x
-	add r5, r6, r4 // add base address
+
+	lsl r7, r1, #7 
+	add r6, r7, r0 
+	add r5, r6, r4 
 	
-	// write ascii char(r2) at address
 	strb r2, [r5]
-	// done
+	
 	Done:
-	// return
+	
 	pop {r4, r5, r6, r7, pc}
 
 // ClearTextBuffer() : none
-// Clears the text buffer by filling it with spaces (ASCII 0x20).
-//
-// for every spot in the grid, write a space (ASCII 0x20) to the text buffer
-//
-// r4: number of rows
-// r5: number of columns
-// r6: inner loop counter (i)
-// r7: outer loop counter (j)
+// Clears the text buffer
 .align 2
 ClearTextBuffer:
 	push {r4, r5, r6, r7, lr}
-	mov r0, #0 // initial x value
-	mov r1, #0 // initial y value
-	mov r2, #0x20 // ASCII value for space
-	mov r4, #60 // 60 rows in buffer
-	mov r5, #80 // 80 cols in buffer
-	mov r6, #0 // initialize i
-	mov r7, #0 // initialize j
+	mov r0, #0 
+	mov r1, #0
+	mov r2, #0x20 
+	mov r4, #60 
+	mov r5, #80 
+	mov r6, #0 
+	mov r7, #0 
 	b InnerLoop
 	
 	OuterLoop:
-		add r7, r7, #1 // increment j
-		// end if j==60
+		add r7, r7, #1 
+
 		cmp r7, r4
 		beq ClearTextBufferDone
-		mov r6, #0 // reset i
+		mov r6, #0 
 		InnerLoop:
-		// draw char
-		// increment counter
-		// compare counter with r4 -> larger=move on to next row & reset counter
 			mov r0, r6
 			mov r1, r7
 			bl DrawChar
 			add r6, r6, #1
 			
-			cmp r6, r5 // compare i and 80
-			bne InnerLoop // loop again if theyre not equal
-			beq OuterLoop // branch to outerloop if they are equal
+			cmp r6, r5 
+			bne InnerLoop 
+			beq OuterLoop 
 	ClearTextBufferDone:
 	pop {r4, r5, r6, r7, pc}
 	
