@@ -168,39 +168,35 @@ ClearTextBuffer:
 	ClearTextBufferDone:
 	pop {r4, r5, r6, r7, pc}
 	
-// DrawPix: (x[r0], y[r1], color[r2])
-// write 1 pixel of color r2 to the screen at (x,y)
+// DrawPix: write 1 pixel of color r2 to the screen at (x,y)
 .align 2
 DrawPix:
-	// save lr
 	push {r4, r5, r6, r7, r8, lr}
 	mov r6, #0
 	mov r5, #0
-	// load pix_buffer address
+	
 	ldr r4, =PIX_BUFFER
-	// if x >= 320, skip writing pix section
+	
 	cmp r0, #320
 	bge DrawPixDone
-	// if x is negative, skip writing pix
+	
 	cmp r0, #0
 	blt DrawPixDone
-	// if y >= 240, skip writing pix
+	
 	cmp r1, #240
 	bge DrawPixDone
-	// if y is negative, skip writing pix
+	
 	cmp r1, #0
 	blt DrawPixDone
-	// compute address
-	lsl r7, r1, #9 // shfit y left 9 **CHANGED**
-	add r6, r7, r0 // add y and x
-	lsl r8, r6, #1 // shift y+x left 1, leaves a 0 in lsb 
-	add r5, r8, r4 // add base address
 	
-	// write color(r2) at calculated address
+	lsl r7, r1, #9 
+	add r6, r7, r0 
+	lsl r8, r6, #1
+	add r5, r8, r4 
+	
 	strh r2, [r5] 
-	// done
+	
 	DrawPixDone:
-	// return
 	pop {r4, r5, r6, r7, r8, pc}
 	
 	
@@ -210,42 +206,32 @@ DrawPix:
 // Colors as 16-bit values (zero extended to 32-bits for procedure call). 
 // For instance, the value 0xffff would fill the screen with white pixels and
 // the value 0x0000 would paint it black.
-
-	// r4: number of rows
-// r5: number of columns
-// r6: inner loop counter (i)
-// r7: outer loop counter (j)
 .align 2
 ClearVGA:
 	push {r4, r5, r6, r7, r8, lr}
 	mov r2, r0
-	mov r0, #0 // initial x value
-	mov r1, #0 // initial y value
-	// ldr r2 // color
-	mov r4, #240 // 60 rows in buffer
-	mov r5, #320 // 80 cols in buffer
-	mov r6, #0 // initialize i
-	mov r7, #0 // initialize j
+	mov r0, #0 
+	mov r1, #0 
+	mov r4, #240 
+	mov r5, #320 
+	mov r6, #0 
+	mov r7, #0 
 	b InnerLoopPix
 	
 	OuterLoopPix:
-		add r7, r7, #1 // increment j
-		// end if j==240
+		add r7, r7, #1 
 		cmp r7, r4
 		beq ClearVGADone
-		mov r6, #0 // reset i
+		mov r6, #0 
 		InnerLoopPix:
-		// draw char
-		// increment counter
-		// compare counter with r4 -> larger=move on to next row & reset counter
 			mov r0, r6
 			mov r1, r7
 			bl DrawPix
 			add r6, r6, #1
 			
-			cmp r6, r5 // compare i and 320
-			bne InnerLoopPix // loop again if theyre not equal
-			beq OuterLoopPix // branch to outerloop if they are equal
+			cmp r6, r5 
+			bne InnerLoopPix 
+			beq OuterLoopPix 
 	ClearVGADone:
 	pop {r4, r5, r6, r7, r8, pc}
 
