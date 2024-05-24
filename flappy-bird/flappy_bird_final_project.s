@@ -236,121 +236,84 @@ ClearVGA:
 	pop {r4, r5, r6, r7, r8, pc}
 
 
-// BitBlit(pmap[r0] : pixmap_ptr, x[r1] : int, y[r2] : int) : none
+// BitBlit
 // Draws a pixelmap (color image) on the screen, 
-// given a pointer to the pixmap data structure. The image will be centered at (x,y). 
-// Your routine should clip the image as necessary – do not attempt to draw
-// any portion of the image that does not fit into the screen – draw only what 
-// fits into the (0,0) - (319, 239) viewable screen. Note that the above 
-// formulation would allow BitBlit to be called with negative values (e.g. (-10, -5)
-// which should imply that portions of the image will be offscreen).
-
+// given a pointer to the pixmap data structure. The image will be centered at (x,y).
 .align 2
 BitBlit:
-// calculate top left of image using (x,y) and PIXMAP_WIDTH/PIXMAP_HEIGHT
-// store transparency value (we will compare each pixel value to this when we decide if we write or skip it)
-// for each pixel in pixmap, write/skip
-	// r0 -> r4: pixmap_ptr (address)
-	// r1 -> r5: given x [in loops: r5 = ptr to current data]
-	// r2 -> r6: given y
-	// r7: transparency value (PIXMAP_TRANSPARENCY)
-	// r8: PIXMAP WIDTH
-	// r9: PIXMAP HEIGHT
-	// r10: top left x
-	// r11: top left y
-	// r3: j (col counter)
-	// r12: i (row counter)
 	push {r4, r5, r6, r7, r8, r9, r10, r11, r12, lr}
-	// setup
 	mov r4, r0
 	mov r5, r1
 	mov r6, r2
 	mov r3, #0
 	mov r12, #0
-	// calculate top left of image 
-	// take width, divide by 2, sbutract it from given x(r1/r5) -> top left x
-	// take height, divide by 2, subtract it from given y(r2/r6) -> top left y
-	ldrsh r8, [r4, #PIXMAP_WIDTH] // r8 <- pixmap_width 
-	ldrsh r9, [r4, #PIXMAP_HEIGHT] // r9 <- pixmap_height
+
+	ldrsh r8, [r4, #PIXMAP_WIDTH] 
+	ldrsh r9, [r4, #PIXMAP_HEIGHT] 
     
-	// calculating xleft wrong? its 4 too small rn
-	mov r10, r8, asr #1 // divide r8(width) by 2
-	sub r10, r5, r10 // x - width/2
+	mov r10, r8, asr #1 
+	sub r10, r5, r10
 	
 	
-	mov r11, r9, asr #1 // height/2
-	sub r11, r6, r11 // y - height/2
+	mov r11, r9, asr #1 
+	sub r11, r6, r11 
 	
-	// get transparency value
 	ldrh r7, [r4, #PIXMAP_TRANSPARENCY]
 	
-	// (lea) load address of pixmap data (OVERWRITING R5)
 	mov r5, #0
 	add r5, r5, #PIXMAP_PIXELDATA
-	add r5, r5, r4 // r4 was r0
-	// for each pixel in pixmap: draw/skip
+	add r5, r5, r4 
+	
 	OuterLoopBitBlit:
-		add r3, r3, #1 // increment j
-		// end if j==height
+		add r3, r3, #1 
 		cmp r3, r9
 		bgt End
-		mov r12, #0 // reset i
+		mov r12, #0 
 		InnerLoopBitBlit:
-		// draw char
-		// increment counter
-		// compare counter with r4 -> larger=move on to next row & reset counter
-		// need to add top left x(r10) + counter & top left y(r11) 
 			mov r0, #0
 			mov r1, #0
 			add r0, r12, r10
 			add r1, r3, r11
-			sub r1, r1, #1 // should fix j offset? ***
-			// need pix color hex for r2
+			sub r1, r1, #1 
 			ldrh r2, [r5]
-			// need to check if its transparent (matches r7)
 			cmp r2, r7
 			beq Transparent
 			bl DrawPix
 			Transparent:
-			add r12, r12, #1 // increment i
-			add r5, r5, #2 // increment data ptr
+			add r12, r12, #1
+			add r5, r5, #2 
 			
-			cmp r12, r8 // compare i and image width
-			bne InnerLoopBitBlit // loop again if theyre not equal
-			beq OuterLoopBitBlit // branch to outerloop if they are equal
+			cmp r12, r8 
+			bne InnerLoopBitBlit 
+			beq OuterLoopBitBlit 
 	
 	End:
-		pop {r4, r5, r6, r7, r8, r9, r10, r11, r12, pc}                             // Return
+		pop {r4, r5, r6, r7, r8, r9, r10, r11, r12, pc}                             
 	
 
 
 .align 2
 init:
-	ldr sp, =0x800000	// Initial stack pointer
+	ldr sp, =0x800000	
 	push {r4, r5, r6, r7, lr}
 	bl ClearTextBuffer
 	pop {r4, r5, r6, r7, pc}
 
 // DrawSprite: draws a sprite at the positions in its struct
-// inputs: struct ptr (r0)
 .align 2
 DrawSprite:
-    push {r4, r5, lr} // do i need all th bitblit registers too
+    push {r4, r5, lr} 
 	mov r5, r0
-    ldr r4, [r0, #PIXMAP_PTR] // r4 <- sprite.pixmap_ptr
-    ldrsh r1, [r0, #XPOS]       // r1 <- sprite.xpos
-    ldrsh r2, [r0, #YPOS]       // r2 <- sprite.ypos
+    ldr r4, [r0, #PIXMAP_PTR] 
+    ldrsh r1, [r0, #XPOS]      
+    ldrsh r2, [r0, #YPOS]    
     mov r0, r4
-    bl BitBlit                // draw sprite
+    bl BitBlit             
 	mov r0, r5
     pop {r4, r5, pc}
 	
 	
 // DetectCollision: checks for collision and prints if collision detected
-// inputs: sprite1_ptr(r0), sprite2_ptr(r1)
-// load both sprite structs and their bounding boxes
-// check if bounding points are same
-// if any of one sprite overlaps with the other, print collision
 .align 2
 DetectCollision:
     push {r4, r5, r6, r7, r8, r9, r10, r11, lr}
