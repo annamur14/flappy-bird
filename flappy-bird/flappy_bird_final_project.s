@@ -318,83 +318,55 @@ DrawSprite:
 DetectCollision:
     push {r4, r5, r6, r7, r8, r9, r10, r11, lr}
 
-    // load sprite 1 bounds
-    ldrsh r4, [r0, #LEFTX]   // load leftx1
-    ldrsh r5, [r0, #RIGHTX]  // load rightx1
-    ldrsh r6, [r0, #TOPY]    // load topy1
-    ldrsh r7, [r0, #BOTTOMY] // load bottomy1
+    ldrsh r4, [r0, #LEFTX]   
+    ldrsh r5, [r0, #RIGHTX]  
+    ldrsh r6, [r0, #TOPY]    
+    ldrsh r7, [r0, #BOTTOMY] 
 
-    // load sprite 2 bounds
     ldrsh r8, [r1, #LEFTX]
     ldrsh r9, [r1, #RIGHTX]
     ldrsh r10, [r1, #TOPY]
     ldrsh r11, [r1, #BOTTOMY]
 
-    // check for horizontal overlap
-    cmp r4, r9   // leftx1 <= rightx2
+    cmp r4, r9   
     bgt NoCollision
-    cmp r5, r8   // rightx1 >= leftx2
+    cmp r5, r8   
     blt NoCollision
 
-    // check for vertical overlap
-    cmp r6, r11  // topy1 <= bottomy2
+    cmp r6, r11 
     bgt NoCollision
-    cmp r7, r10  // bottomy1 >= topy2
+    cmp r7, r10 
     blt NoCollision
 
-    // OVERLAP DETECTED:
 	bl GameOver
 	b CollisionDone
 
 NoCollision:
-	//bl ClearTextBuffer
 CollisionDone:
     pop {r4, r5, r6, r7, r8, r9, r10, r11, pc}
 
 
 
 // DrawStr: DrawStr(x(r0), y(r1), s(r2)) - Draws a string (s – null terminated) at screen column x, row y.
-// Text should be clipped (e.g. do not attempt to draw any characters that do not fit on the
-// screen).
-// 
-// save registers used in func
-// while *ptr != \0 (ASCII 0x00)
-//	DrawChar(x, y, *ptr)
 .align 2
 DrawStr:
-	// save registers
 	push {r4, r5, lr}
-	
-	// move string to r5
 	mov r5, r2
-	
-	// get byte
 	ldrb r4, [r5] 
-	
-	// unconditional branch to condition check/if
 	b IsCharNull
-	
-	// loop body (beans)
 	Beans:
-		// mov char(r4) to r2 to prepare for DrawChar call
 		mov r2, r4
-		// draw character
 		bl DrawChar
-		// go to next char
 		add r5, r5, #1
-		
-		// get byte
 		ldrb r4, [r5] 
 		
 		cmp r4, #0
 		beq IsCharNull
 
-		// increement r0
 		add r0, r0, #1 
 	IsCharNull:
-	// compare ptr register(r4) and 
 		cmp r4, #0
-		bne Beans //
+		bne Beans 
 		
 	pop {r4, r5, pc}
 	
@@ -406,39 +378,30 @@ DrawStr:
 .align 2
 ButtonPressedCheck:
 	push {r4, r5, r6, r7, r8, lr}
-		
-		// negative yvel = up
-		// positive yvel = down
 	
-	ldr r0, =BirdStruct // load ptr to button controlled sprite
-	ldr r1, =BUTTON_ADDR // button addr
-	ldr r4, [r1] // get all button inputs
-	ldr r2, =IsButtonPressed // load addr of global
-	ldr r3, [r2] // load contents of global
+	ldr r0, =BirdStruct 
+	ldr r1, =BUTTON_ADDR 
+	ldr r4, [r1] 
+	ldr r2, =IsButtonPressed 
+	ldr r3, [r2] 
 	
-	// compare contents of global vs io
 	cmp r4, r3
 	beq ButtonCheckDone
-	bgt Bounce// io==1, global==0
-	// if button io==0 && global==1 -> write 0 to global, skip to end
-	// if were here, r4<r2 -> io==0, global==1
+	bgt Bounce
 	mov r7, #0
-	str r7, [r2] // write 0 to global
+	str r7, [r2] 
 	b ButtonCheckDone
 	
-	// else if buttonio==1 && global==0 -> BOUNCE, write 1 to global, skip to end
 	Bounce:
 	bl PlaySound
-	ldrsh r7, [r0, #YVEL]// load yvel 
+	ldrsh r7, [r0, #YVEL]
 	cmp r7, #0
-	beq ButtonCheckDone // if yvel==0 -> do nothing
+	beq ButtonCheckDone 
 	blt Up
-	// if yvel > 0 (down) -> yvel=-yvel
-	rsb r7, r7, #0// yvel=-yvel
+	rsb r7, r7, #0
 	b BounceDone
 	
-	// else if yvel < 0 (up) -> yvel=origyvel
-	Up: // sprite going up, yvel is negative
+	Up: 
 	bl PlaySound
 	ldr r8, =OrigYvel 
 	ldrh r8, [r8]
@@ -449,10 +412,8 @@ ButtonPressedCheck:
 	BounceDone:
 	strh r7, [r0, #YVEL]
 	mov r7, #1 
-	str r7, [r2]// set global=1
+	str r7, [r2]
 	b ButtonCheckDone
-	
-	// else (same io and global) -> do nothing and skip to end
 	
 	ButtonCheckDone:
 	pop {r4, r5, r6, r7, r8, pc}
