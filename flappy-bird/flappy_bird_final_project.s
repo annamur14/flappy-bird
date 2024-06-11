@@ -425,124 +425,78 @@ DrawBird:
 	push {r4, r5, r6, r7, r8, r9, r10, r11, r12, lr}
 	ldr r3, =BirdStruct
 	ldr r0, [r3, #PIXMAP_PTR]
-	mov r1, #56 // x=56
+	mov r1, #56 
 	ldrh r2, [r3, #YPOS]
 	bl BitBlit
-	// load bottomy
-	// branch to game over if bottomy==209
 	pop {r4, r5, r6, r7, r8, r9, r10, r11, r12, pc}
 	
-	// 
-	// UpdateSprite: updates the positions and velocities in the sprite struct
-// inputs: struct ptr (r0)
-// r4: new_xpos
-// r5: new_ypos
-// r6: total pix buffer width
-// r7: total pix buffer height
-// r8: pixmap width
-// r9: pixmap height 239
-// r10: x bound
-// r11: y bound
-// r12: pixmap address
+// UpdateSprite: updates the positions and velocities in the sprite struct
 .align 2
 UpdateSprite:
 	push {r4, r5, r6, r7, r8, r9, r10, r11, r12, lr}
 	 
-	ldr r12, [r0, #PIXMAP_PTR] // load addr to pixmap
+	ldr r12, [r0, #PIXMAP_PTR] 
 	
-	// load pixmap width and height
-	ldrsh r8, [r12, #PIXMAP_WIDTH] // r8 <- pixmap_width 
-	ldrsh r9, [r12, #PIXMAP_HEIGHT] // r9 <- pixmap_height
+	ldrsh r8, [r12, #PIXMAP_WIDTH] 
+	ldrsh r9, [r12, #PIXMAP_HEIGHT] 
 	
-	ldrh r6, =PIX_WIDTH // address of PIX_WIDTH constant
+	ldrh r6, =PIX_WIDTH
 	ldrsh r6, [r6]
 
-	// new_xpos = structptr[r0].xpos + structptr.xvel
 	ldrsh r4, [r0, #XPOS]
 	ldrsh r1, [r0, #XVEL]
 	add r4, r4, r1
 	
-	// calculate leftx and rightx bounds
-	mov r7, r8, asr #1 // divide r8(width) by 2
+	mov r7, r8, asr #1 
     
-	sub r10, r4, r7 // x - width/2
-	strh r10, [r0, #LEFTX] // struct.leftx = x - width/2
+	sub r10, r4, r7 
+	strh r10, [r0, #LEFTX] 
 	
 	add r10, r4, r7
-    strh r10, [r0, #RIGHTX] // struct.rightx = x + width/2
+    strh r10, [r0, #RIGHTX] 
 	
-	// new_ypos = structptr.ypos + structptr.yvel
 	ldrsh r5, [r0, #YPOS]
 	ldrsh r2, [r0, #YVEL]
 	add r5, r5, r2
 	
-	// calculate topy and bottomy bounds
-	mov r3, r9, asr #1 // divide r9(height) by 2
+	mov r3, r9, asr #1 
 	
-	sub r11, r5, r3 // y - height/2
-    strh r11, [r0, #TOPY] // struct.topy = y - height/2
+	sub r11, r5, r3 
+    strh r11, [r0, #TOPY] 
     
     add r11, r5, r3
-    strh r11, [r0, #BOTTOMY] // struct.bottomy = y + height/2
+    strh r11, [r0, #BOTTOMY] 
 	
-	
-	// if bounding box bounds are outside of pixmap bounds 
-	// assign bounding box to bound of pix buffer
-	// recalculate: (newx,newy) = (boundx,boundy) +- (width,height)/2
-	
-	// if (leftx < 0)
 	ldrsh r10, [r0, #LEFTX]
 	cmp r10, #0
 	bge UpdateSprite0
-	// leftx ⇽ 0 ; structptr.xvel ⇽ - structptr.xvel
 	mov r10, #0
 	strh r10, [r0, #LEFTX]
-	//add r4, r10, r7	// new_xpos = leftx + width/2
 	mov r4, r7
 	strh r4, [r0, #XPOS]
 	rsb r1, r1, #0
 	strh r1, [r0, #XVEL]
 	
 	UpdateSprite0:
-		// if (rightx > 319)
 		ldrsh r10, [r0, #RIGHTX]
 		cmp r10, r6
 		ble UpdateSprite2
-		// rightx ⇽ 319 ; structptr.xvel ⇽ - structptr.xvel
 		mov r10, r6
 		strh r10, [r0, #RIGHTX]
-		sub r4, r10, r7 // new_xpos = rightx - width/2
+		sub r4, r10, r7 
 		strh r4, [r0, #XPOS]
 		rsb r1, r1, #0
 		strh r1, [r0, #XVEL]
 	
-	// bird can go above screen and come back down
-	/*UpdateSprite1: 
-		// if (topy < 0)
-		ldrsh r11, [r0, #TOPY]
-		cmp r11, #0
-		bgt UpdateSprite2
-		// topy ⇽ 0 ; sructptr.yvel ⇽ - structptr.yvel
-		mov r11, #0
-		strh r11, [r0, #TOPY]
-		//add r5, r11, r3 // new_ypos = topy + height/2
-		mov r5, r3
-		strh r5, [r0, #YPOS]
-		rsb r2, r2, #0
-		strh r2, [r0, #YVEL]*/
-	
 	UpdateSprite2:
-		// if (bottomy > 210) 209==platform location
 		ldrsh r11, [r0, #BOTTOMY]
 		cmp r11, #209
 		ble UpdateSprite3
-		// bottomy ⇽ 0 ; structptr.yvel ⇽ - structptr.yvel
 		mov r11, #209
 		strh r11, [r0, #BOTTOMY]
-		sub r5, r11, r3 // new_ypos = bottomy = height/2
+		sub r5, r11, r3 
 		strh r5, [r0, #YPOS] 
-		mov r2, #0 // bird sits on platform
-		//rsb r2, r2, #0
+		mov r2, #0 
 		strh r2, [r0, #YVEL]
 		bl GameOver
 	
